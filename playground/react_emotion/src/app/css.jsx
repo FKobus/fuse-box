@@ -15,10 +15,8 @@ const styles1 = css`
   ${css`
     background-color: purple;
   `}
-  font-size: 12px;
+  ${'' /* font-size: 12px; */}
 `;
-
-// const h1styles = css(`color: hotpink;label:app-css-h1styles`);
 
 const h1styles = css`
   color: hotpink;
@@ -29,8 +27,6 @@ const h2styles = css`
   `}
 `;
 
-// label:Button__base;
-
 export const Css = () => (
   <div css={styles1}>
     <h1 css={h1styles}>🚀 Jättesnabb 🚀</h1>
@@ -40,7 +36,7 @@ export const Css = () => (
     <h5 css={css`
       color: lime;
     `}>🚀 Jättesnabb 🚀</h5>
-    <div>allslsls</div>
+    <div>Click a button</div>
   </div>
 );
 

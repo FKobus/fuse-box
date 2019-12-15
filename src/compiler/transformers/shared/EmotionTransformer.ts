@@ -52,10 +52,11 @@ const minify: string = (value: string) => compressSymbols(value.replace(/[\n]\s*
  * @todo
  * 1. get options from plugin creation
  * 2. expand the minify (way to simple :P)
- * 5. Components as selectors
- * 6. Minification
- * 7. Dead Code Elimination
- * 8. Sourcemaps
+ * 3. How do we know we're in production or development mode?
+ * 4. Components as selectors
+ * 5. Minification
+ * 6. Dead Code Elimination
+ * 7. Sourcemaps
  */
 export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransformer {
   // @todo:
@@ -107,6 +108,16 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
             const values = [];
             for (let i = 0; i < quasis.length; i++) {
               if (quasis[i].value.cooked) {
+
+                // We don't need minification in devMode!
+                if (true) {
+                  values.push({
+                    type: 'Literal',
+                    value: quasis[i].value.cooked
+                  });
+                  continue;
+                }
+
                 const minifiedCss = minify(quasis[i].value.cooked);
                 if (minifiedCss) {
                   values.push({
