@@ -1,4 +1,5 @@
 import { IVisit } from '../../Visitor/Visitor';
+import { ASTNode } from '../../interfaces/AST';
 import { GlobalContext } from '../../program/GlobalContext';
 import { ITransformer } from '../../program/transpileModule';
 
@@ -18,7 +19,8 @@ const defaultOptions: EmotionTransformerOptions = {
   cssPropOptimization: true,
   emotionCoreAlias: '@emotion/core',
   jsxFactory: 'jsx',
-  labelFormat: '[dirname]--[filename]--[local]', // [filename][dirname][local]
+  // labelFormat: '[dirname]--[filename]--[local]', // [filename][dirname][local]
+  labelFormat: '[dirname]--[local]', // [filename][dirname][local]
   sourceMap: true
 };
 
@@ -79,7 +81,20 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
     '[dirname]': filePath.replace(/(\\|\/)/g, '-'),
     '[filename]': filePath.replace(/(.+)(\\|\/)(.+)$/, '$3'),
     '[local]': 'inline'
-  }
+  };
+
+  const renderAutoLabel: ASTNode = () => {
+    return {
+      type: 'Literal',
+      value: `label:${labelFormat.replace(
+        /\[local\]|\[filename\]|\[dirname\]/gi,
+        m => labelMapping[m]
+      ).replace(
+        /\-\-$/,
+        ''
+      )};`
+    };
+  };
 
   // Keep track of imported emotion functions.
   // Allows us to look for custom imports
@@ -92,14 +107,33 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
       const { node, parent } = visit;
 
       switch (node.type) {
+
         // css({}); -> CallExpression
-        // case 'CallExpression':
-        //   return;
+        case 'CallExpression':
+          // Test if it's an emotioncall
+          if (importedEmotionFunctions.indexOf(node.callee.name) > -1) {
+
+            labelMapping['[local]'] = (parent.type === 'VariableDeclarator')
+              ? parent.id.name
+              : '';
+
+            const label = (
+              !parent.callee || (
+                parent.callee &&
+                parent.callee.name !== node.callee.name
+              )) &&
+              autoLabel &&
+              renderAutoLabel();
+            if (label) {
+              node.arguments.push(label);
+            }
+          }
+          break;
+
         // css``; -> TaggedTemplateExpression
         case 'TaggedTemplateExpression':
           // Test if it's an emotioncall
           if (importedEmotionFunctions.indexOf(node.tag.name) > -1) {
-            labelMapping['[local]'] = (parent.type === 'VariableDeclarator') ? parent.id.name : 'inline';
             const {
               quasi: { expressions, quasis },
               tag: callee
@@ -108,7 +142,6 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
             const values = [];
             for (let i = 0; i < quasis.length; i++) {
               if (quasis[i].value.cooked) {
-
                 // We don't need minification in devMode!
                 if (true) {
                   values.push({
@@ -127,21 +160,11 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
                 }
               }
             }
-            // if we have a parent.callee, we assume we already have the label parsed into it
-            const label = !parent.callee && autoLabel
-              ? {
-                type: 'Literal',
-                value: `label:${labelFormat.replace(
-                  /\[local\]|\[filename\]|\[dirname\]/gi,
-                  m => labelMapping[m]
-                )};`
-              }
-              : false;
 
             // Replace this node with new shiny stuff
             return {
               replaceWith: {
-                arguments: [].concat(values, expressions, [label]).filter(Boolean),
+                arguments: [].concat(values, expressions).filter(Boolean),
                 callee,
                 type: "CallExpression"
               }

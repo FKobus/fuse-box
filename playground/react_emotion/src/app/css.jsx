@@ -26,12 +26,16 @@ const h2styles = css`
     color: deeppink
   `}
 `;
+const h3styles = css({
+  backgroundColor: 'black',
+  color: 'white'
+});
 
 export const Css = () => (
   <div css={styles1}>
     <h1 css={h1styles}>🚀 Jättesnabb 🚀</h1>
     <h2 css={h2styles}>🚀 eller 🚀</h2>
-    <h3>🚀 jättesnabb 🚀</h3>
+    <h3 css={h3styles}>🚀 jättesnabb 🚀</h3>
     <h4>🚀 Jättesnabb 🚀</h4>
     <h5 css={css`
       color: lime;
