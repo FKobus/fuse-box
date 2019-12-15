@@ -92,8 +92,8 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
 
       switch (node.type) {
         // css({}); -> CallExpression
-        case 'CallExpression':
-          return;
+        // case 'CallExpression':
+        //   return;
         // css``; -> TaggedTemplateExpression
         case 'TaggedTemplateExpression':
           // Test if it's an emotioncall
@@ -104,19 +104,19 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
               tag: callee
             } = node;
 
-            const values = quasis.map(
-              quasi => {
-                const minifiedCss = minify(quasi.value.cooked);
-                if (!minifiedCss) {
-                  return false;
+            const values = [];
+            for (let i = 0; i < quasis.length; i++) {
+              if (quasis[i].value.cooked) {
+                const minifiedCss = minify(quasis[i].value.cooked);
+                if (minifiedCss) {
+                  values.push({
+                    type: 'Literal',
+                    value: minifiedCss
+                  });
                 }
-                return {
-                  type: 'Literal',
-                  value: minifiedCss
-                };
               }
-            ).filter(Boolean);
-
+            }
+            // if we have a parent.callee, we assume we already have the label parsed into it
             const label = !parent.callee && autoLabel
               ? {
                 type: 'Literal',
@@ -139,7 +139,9 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
       const globalContext = visit.globalContext as GlobalContext;
       if (node.type === 'ImportDeclaration') {
         if (emotionLibraries.indexOf(node.source.value) > -1 && needsInjection) {
-          for (let i = 0; i < node.specifiers.length; i++) {
+          const specifiersLength = node.specifiers.length;
+          let i = 0;
+          while (i < specifiersLength) {
             if (node.specifiers[i].imported.name === 'jsx') {
               needsInjection = false;
               // set the globalContext.jsxFactory for the JSXTransformer
@@ -147,6 +149,7 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
             } else {
               importedEmotionFunctions.push(node.specifiers[i].local.name);
             }
+            i++;
           }
 
           if (needsInjection) {
