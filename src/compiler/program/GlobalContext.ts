@@ -2,15 +2,16 @@ import { ASTNode } from '../interfaces/AST';
 import { IProgramProps } from './transpileModule';
 
 export interface GlobalContext {
-  getNextIndex: () => number;
-  getNextSystemVariable: () => string;
-  hoisted: { [key: string]: number };
+  completeCallbacks?: Array<() => void>;
+  jsxFactory?: string;
+  namespace?: string;
+  programProps?: IProgramProps;
   exportAfterDeclaration?: {
     [key: string]: {
       target?: string;
     };
   };
-  programProps?: IProgramProps;
+  hoisted: { [key: string]: number };
   identifierReplacement: {
     [key: string]: {
       first?: string;
@@ -19,8 +20,8 @@ export interface GlobalContext {
       inUse?: boolean;
     };
   };
-  namespace?: string;
-  completeCallbacks?: Array<() => void>;
+  getNextIndex: () => number;
+  getNextSystemVariable: () => string;
 }
 
 const Letters = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i'];
@@ -32,9 +33,9 @@ export function createGlobalContext(userContext?: { [key: string]: any }): Globa
     completeCallbacks: [],
     hoisted: {},
 
-    getNextIndex: () => index++,
     identifierReplacement: {},
     namespace: 'exports',
+    getNextIndex: () => index++,
     getNextSystemVariable: () => {
       //return `_${++VARIABLE_COUNTER}_`;
       return `_${Letters[++VARIABLE_COUNTER]}`;
