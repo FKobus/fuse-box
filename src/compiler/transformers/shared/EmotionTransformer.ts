@@ -36,14 +36,13 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
   return {
     onEachNode: (visit: IVisit) => {
       const { node, parent } = visit;
-      // const name = node.name as string;
+
       switch (node.type) {
         case 'TaggedTemplateExpression':
+          // @todo, create a functions list from the imports
           if (node.tag.name === 'css') {
-            // we can get the variable name
-            if (parent.type === 'VariableDeclarator') {
-              const constName = parent.id.name;
-            }
+            const declaratorName = (parent.type === 'VariableDeclarator') ? parent.id.name : '';
+
           }
           break;
       }
