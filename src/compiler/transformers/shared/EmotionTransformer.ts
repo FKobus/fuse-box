@@ -19,8 +19,12 @@ const defaultOptions: EmotionTransformerOptions = {
  *   - import { jsx as jsxCustomName } from '@emotion/core'
  * 3. custom name for the library itself (if using aliases)
  *   - import { css, jsx } from 'customLibrary' -> '@emotion/core'
- * 4. labels in css classname
- * 5. the rest
+ * 4. Contextual Class Names
+ *   - labels in css classname `label:[filename][component][....]`
+ * 5. Components as selectors
+ * 6. Minification
+ * 7. Dead Code Elimination
+ * 8. Sourcemaps
  */
 export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransformer {
   const { autoInject, jsxFactory } = opts
@@ -30,15 +34,31 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
   const imports = [];
   let needsInjection = true;
   return {
-    onEachNode: (visit: IVisit) => { },
+    onEachNode: (visit: IVisit) => {
+      const { node, parent } = visit;
+      // const name = node.name as string;
+      switch (node.type) {
+        case 'TaggedTemplateExpression':
+          if (node.tag.name === 'css') {
+            // we can get the variable name
+            if (parent.type === 'VariableDeclarator') {
+              const constName = parent.id.name;
+            }
+          }
+          break;
+      }
+    },
     onTopLevelTraverse: (visit: IVisit) => {
       const node = visit.node;
       const global = visit.globalContext as GlobalContext;
       if (node.type === 'ImportDeclaration') {
+        // @todo, make import library dynamic
+        // @todo, also make it work with 'emotion'
         if (node.source.value === '@emotion/core' && needsInjection) {
           // setting the global context so the JSXTransformer uses
           // this factory instead of the default for this file
           global.jsxFactory = 'jsx';
+
           for (let i = 0; i < node.specifiers[0].length; i++) {
             if (node.specifiers[0].imported.name === 'jsx') {
               needsInjection = false;
@@ -47,6 +67,7 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
 
           if (needsInjection) {
             needsInjection = false;
+            // @todo, make the local configurable
             node.specifiers.push({
               imported: {
                 name: 'jsx',
@@ -59,8 +80,6 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
               type: 'ImportSpecifier'
             });
           }
-        } else if (node.source.value === '@emotion/styled' && !global.jsxFactory) {
-          // global.jsxFactory = 'jsx';
         }
       }
     }

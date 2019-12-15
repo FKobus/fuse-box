@@ -15,7 +15,7 @@ class Context {
       devServer: {
         hmrServer: { port: 7878 },
         httpServer: true,
-        open: true
+        open: false
       },
       entry: "index.js",
       homeDir: "src/",
