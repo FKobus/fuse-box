@@ -15,6 +15,7 @@ const styles1 = css`
   ${css`
     background-color: purple;
   `}
+  font-size: 12px;
 `;
 
 // const h1styles = css(`color: hotpink;label:app-css-h1styles`);
