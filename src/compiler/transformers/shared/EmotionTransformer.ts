@@ -120,9 +120,14 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
             const label = !parent.callee && autoLabel
               ? {
                 type: 'Literal',
-                value: `label:${labelFormat.replace(/\[local\]|\[filename\]|\[dirname\]/gi, m => labelMapping[m])};`
+                value: `label:${labelFormat.replace(
+                  /\[local\]|\[filename\]|\[dirname\]/gi,
+                  m => labelMapping[m]
+                )};`
               }
               : false;
+
+            // Replace this node with new shiny stuff
             return {
               replaceWith: {
                 arguments: [].concat(values, expressions, [label]).filter(Boolean),
