@@ -49,14 +49,14 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
     },
     onTopLevelTraverse: (visit: IVisit) => {
       const node = visit.node;
-      const global = visit.globalContext as GlobalContext;
+      const globalContext = visit.globalContext as GlobalContext;
       if (node.type === 'ImportDeclaration') {
         // @todo, make import library dynamic
         // @todo, also make it work with 'emotion'
         if (node.source.value === '@emotion/core' && needsInjection) {
           // setting the global context so the JSXTransformer uses
           // this factory instead of the default for this file
-          global.jsxFactory = 'jsx';
+          globalContext.jsxFactory = 'jsx';
 
           for (let i = 0; i < node.specifiers[0].length; i++) {
             if (node.specifiers[0].imported.name === 'jsx') {

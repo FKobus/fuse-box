@@ -2,16 +2,16 @@ import { ASTNode } from '../interfaces/AST';
 import { IProgramProps } from './transpileModule';
 
 export interface GlobalContext {
-  completeCallbacks?: Array<() => void>;
-  jsxFactory?: string;
-  namespace?: string;
-  programProps?: IProgramProps;
+  getNextIndex: () => number;
+  getNextSystemVariable: () => string;
+  hoisted: { [key: string]: number };
   exportAfterDeclaration?: {
     [key: string]: {
       target?: string;
     };
   };
-  hoisted: { [key: string]: number };
+  jsxFactory?: string;
+  programProps?: IProgramProps;
   identifierReplacement: {
     [key: string]: {
       first?: string;
@@ -20,25 +20,25 @@ export interface GlobalContext {
       inUse?: boolean;
     };
   };
-  getNextIndex: () => number;
-  getNextSystemVariable: () => string;
+  namespace?: string;
+  completeCallbacks?: Array<() => void>;
 }
 
 const Letters = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'i'];
 
 export function createGlobalContext(userContext?: { [key: string]: any }): GlobalContext {
-  let VARIABLE_COUNTER = -1;
+  let VARIABLE_COUNTER = 0;
   let index = 1;
   let essentialContext = {
     completeCallbacks: [],
     hoisted: {},
 
+    getNextIndex: () => index++,
     identifierReplacement: {},
     namespace: 'exports',
-    getNextIndex: () => index++,
     getNextSystemVariable: () => {
-      //return `_${++VARIABLE_COUNTER}_`;
-      return `_${Letters[++VARIABLE_COUNTER]}`;
+      return `_${++VARIABLE_COUNTER}_`;
+      //return `_${Letters[++VARIABLE_COUNTER]}`;
     },
   };
   if (userContext) {
