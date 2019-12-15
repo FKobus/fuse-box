@@ -4,14 +4,21 @@ import * as React from 'react';
 const styles1 = css`
   width: 100%;
   text-align: center;
-
+  background: url('this-super-dope-logo.jpg');
   h1,
   h2,
   h3,
   h4 {
     color: hotpink;
   }
+  ${{ color: 'white' }}
+  ${css`
+    background-color: purple;
+  `}
 `;
+
+// const h1styles = css(`color: hotpink;label:app-css-h1styles`);
+
 const h1styles = css`
   color: hotpink;
 `;
@@ -32,6 +39,7 @@ export const Css = () => (
     <h5 css={css`
       color: lime;
     `}>🚀 Jättesnabb 🚀</h5>
+    <div>allslsls</div>
   </div>
 );
 
