@@ -1,4 +1,3 @@
-import { join } from "path";
 import { fusebox, pluginEmotion, sparky } from "../../src";
 
 class Context {
@@ -25,6 +24,12 @@ class Context {
       plugins: [
         pluginEmotion({
           autoInject: true,
+          autoLabel: true,
+          cssPropOptimization: true,
+          emotionCoreAlias: '@emotion/core',
+          jsxFactory: 'jsx',
+          labelFormat: '[dirname]--[local]',
+          sourceMap: true,
           target: /src\/(.*?)\.(js|jsx|ts|tsx)$/
         })
       ],

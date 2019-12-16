@@ -75,6 +75,11 @@ export interface ASTNode {
   computed?: boolean;
   accessibility?: string;
   parameter?: ASTNode;
+
+  quasi?: ASTNode;
+  quasis?: Array<ASTNode>;
+  tag?: ASTNode;
+  tail?: boolean;
 }
 export type ASTNodeType =
   | 'OptionalExpression'

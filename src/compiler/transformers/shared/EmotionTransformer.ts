@@ -11,25 +11,14 @@ export interface EmotionTransformerOptions {
   jsxFactory?: string;
   labelFormat?: string;
   sourceMap?: boolean;
+  module: any;
 }
-
-const defaultOptions: EmotionTransformerOptions = {
-  autoInject: true,
-  autoLabel: true,
-  cssPropOptimization: true,
-  emotionCoreAlias: '@emotion/core',
-  jsxFactory: 'jsx',
-  labelFormat: '[dirname]--[local]', // [filename][dirname][local]
-  sourceMap: true
-};
 
 const labelMapping = {
   '[dirname]': '',
   '[filename]': '',
   '[local]': ''
 };
-
-const emotionLibraries: Array<string> = [[defaultOptions.emotionCoreAlias, 'emotion'], ['@emotion/styled']];
 
 // From https://github.com/styled-components/babel-plugin-styled-components/blob/master/src/minify/index.js#L58
 // Counts occurences of substr inside str
@@ -53,40 +42,38 @@ const compressSymbols = code =>
   }, '');
 
 // Super simple minifier.. doesn't cover any edge cases or side effects
-const minify: string = (value: string) => compressSymbols(value.replace(/[\n]\s*/g, ''));
+const minify = (value: string): string => compressSymbols(value.replace(/[\n]\s*/g, ''));
 
 /**
  * @todo
- * 1. get options from plugin creation
- * 2. expand the minify (way to simple :P)
- * 3. How do we know we're in production or development mode?
- * 4. Components as selectors
- * 5. Minification
- * 6. Sourcemaps
+ * 1. expand the minify (way to simple :P)
+ * 2. How do we know we're in production or development mode?
  *
- * 7. Dead Code Elimination // not needed someone told mee
+ * 3. Components as selectors
+ * 4. Minification
+ * 5. Sourcemaps
+ *
+ * 6. Dead Code Elimination // not needed someone told mee
  */
 export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransformer {
-  // @todo:
-  // opts is the module and no way atm to get the plugin options reasonable
-  // const { autoInject, jsxFactory } = opts
-  //   ? { ...defaultOptions, ...opts }
-  //   : { ...defaultOptions };
-
-  // always use defaultOptions atm
   const {
-    autoLabel,
-    emotionCoreAlias,
-    jsxFactory,
-    labelFormat
-  } = defaultOptions;
+    autoLabel = true,
+    emotionCoreAlias = '@emotion/core',
+    jsxFactory = 'jsx',
+    labelFormat = '[dirname]--[local]',
+    // autoInject = true,
+    // cssPropOptimization = true,
+    // sourceMap = true
+  } = opts;
+
+  const emotionLibraries = [[emotionCoreAlias, 'emotion'], ['@emotion/styled']];
 
   // Process dirName and fileName only once per file
   const filePath = opts.module.props.fuseBoxPath.replace(/\.([^.]+)$/, '');
   labelMapping['[dirname]'] = filePath.replace(/(\\|\/)/g, '-');
   labelMapping['[filename]'] = filePath.replace(/(.+)(\\|\/)(.+)$/, '$3');
 
-  const renderAutoLabel: ASTNode = () => {
+  const renderAutoLabel = (): ASTNode => {
     return {
       type: 'Literal',
       value: `label:${labelFormat.replace(
@@ -104,8 +91,7 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
   // import { css as emotionCss } from '@emotion/core'
   const importedEmotionFunctions = [];
   let needsInjection = true;
-
-  const isEmotionCall: boolean = (node: ASTNode, index: string) =>
+  const isEmotionCall = (node: ASTNode, index: string): boolean =>
     // css('styles')
     importedEmotionFunctions.indexOf(node[index].name) > -1 ||
     // styled('obj')('styles')
