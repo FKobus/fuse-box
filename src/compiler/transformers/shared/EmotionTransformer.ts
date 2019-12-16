@@ -10,8 +10,8 @@ export interface EmotionTransformerOptions {
   emotionCoreAlias?: string;
   jsxFactory?: string;
   labelFormat?: string;
-  sourceMap?: boolean;
   module: any;
+  sourceMap?: boolean;
 }
 
 const labelMapping = {
@@ -20,6 +20,11 @@ const labelMapping = {
   '[local]': ''
 };
 
+/**
+ * 1. compare minifiers styled-components and emotion
+ * 2. don't reinvent the wheel..
+ * 3. find a place for these helper functions..
+ */
 // From https://github.com/styled-components/babel-plugin-styled-components/blob/master/src/minify/index.js#L58
 // Counts occurences of substr inside str
 const countOccurences = (str, substr) => str.split(substr).length - 1
@@ -47,25 +52,25 @@ const minify = (value: string): string => compressSymbols(value.replace(/[\n]\s*
 /**
  * @todo
  * 1. expand the minify (way to simple :P)
- * 2. How do we know we're in production or development mode?
  *
- * 3. Components as selectors
- * 4. Minification
- * 5. Sourcemaps
+ * 2. Components as selectors
+ * 3. Minification
+ * 4. Sourcemaps
+ * 5. Minify configurable?
  *
- * 6. Dead Code Elimination // not needed someone told mee
+ * 5. Dead Code Elimination // not needed??
  */
 export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransformer {
   const {
+    autoInject = true,
     autoLabel = true,
     emotionCoreAlias = '@emotion/core',
     jsxFactory = 'jsx',
     labelFormat = '[dirname]--[local]',
-    // autoInject = true,
-    // cssPropOptimization = true,
+    cssPropOptimization = true,
     // sourceMap = true
   } = opts;
-
+  const DEVELOPMENT = (typeof opts.module.props.ctx.config.production === 'undefined' || !opts.module.props.ctx.config.production);
   const emotionLibraries = [[emotionCoreAlias, 'emotion'], ['@emotion/styled']];
 
   // Process dirName and fileName only once per file
@@ -106,12 +111,36 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
       switch (node.type) {
         case 'CallExpression':
           // append the css class label
-          if (!parent.callee && autoLabel && isEmotionCall(node, 'callee')) {
+          if (autoLabel && !parent.callee && isEmotionCall(node, 'callee')) {
             labelMapping['[local]'] =
               (parent.type === 'VariableDeclarator' && parent.id.name) ||
               (parent.type === 'AssignmentExpression' && parent.left.property.name) ||
               '';
             node.arguments.push(renderAutoLabel());
+          }
+          break;
+
+        case 'JSXElement':
+          if (!cssPropOptimization) {
+            break;
+          }
+          const { openingElement: { attributes } } = node;
+          const attrLength = attributes.length;
+          if (attrLength === 0) {
+            break;
+          }
+          for (let i = 0; i < attrLength; i++) {
+            let { type, name, value } = attributes[i]; // call 'attr' once
+            if (type !== 'JSXAttribute' || name.name !== 'css') {
+              continue;
+            }
+            if (
+              value.expression.type === 'ObjectExpression' ||
+              value.expression.type === 'ArrayExpression'
+            ) {
+              // css prop optimization
+              console.log(name, value);
+            }
           }
           break;
 
@@ -131,7 +160,7 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
                 // We don't need minification in devMode!
                 styleProperties.push({
                   type: 'Literal',
-                  value: true ? quasis[i].value.cooked : minify(quasis[i].value.cooked)
+                  value: DEVELOPMENT ? quasis[i].value.cooked : minify(quasis[i].value.cooked)
                 });
               }
               // Put the expressions back in the place where they belong
@@ -171,7 +200,7 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
             i++;
           }
 
-          if (needsInjection && emotionLibraries[0].indexOf(node.source.value) > -1) {
+          if (autoInject && needsInjection && emotionLibraries[0].indexOf(node.source.value) > -1) {
             needsInjection = false;
             // set the globalContext.jsxFactory for the JSXTransformer
             if (node.source.value === emotionCoreAlias) {
