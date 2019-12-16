@@ -1,7 +1,6 @@
 import styled from '@emotion/styled';
 import * as React from 'react';
 
-// Not working with labels
 const RegularDiv = styled.div({
   backgroundColor: 'orange',
   color: 'white'
@@ -11,13 +10,6 @@ const Container = styled.div(props => ({
   flexDirection: props.column && 'column',
   width: '50%'
 }));
-
-const BreakingButton = styled.button`
-  color: ${props => props.primary ? `hotpink` : `green`};
-`;
-
-
-
 
 // regular button
 const Button = styled.button`
@@ -58,7 +50,6 @@ export const Styled = () => (
       <ButtonWithProps primary>This is a primary button.</ButtonWithProps>
     </Container>
     <h2>🚀 Jättesnabb 🚀</h2>
-    <BreakingButton>BreakingButton... todo fix this</BreakingButton>
     <RegularDivTTE>RegularDivTTE</RegularDivTTE>
     <RegularDivOE>RegularDivOE</RegularDivOE>
     <RegularDiv>RegularDiv</RegularDiv>
