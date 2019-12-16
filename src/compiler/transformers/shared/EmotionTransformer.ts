@@ -24,11 +24,16 @@ const defaultOptions: EmotionTransformerOptions = {
   sourceMap: true
 };
 
-const emotionLibraries: Array<string> = [defaultOptions.emotionCoreAlias, 'emotion'];
+const labelMapping = {
+  '[dirname]': '',
+  '[filename]': '',
+  '[local]': ''
+};
+
+const emotionLibraries: Array<string> = [[defaultOptions.emotionCoreAlias, 'emotion'], ['@emotion/styled']];
 
 // Counts occurences of substr inside str
 const countOccurences = (str, substr) => str.split(substr).length - 1
-
 // From https://github.com/styled-components/babel-plugin-styled-components/blob/master/src/minify/index.js#L58
 const compressSymbols = code =>
   code.split(/(\s*[;:{},]\s*)/g).reduce((str, fragment, index) => {
@@ -49,6 +54,20 @@ const compressSymbols = code =>
   }, '');
 
 const minify: string = (value: string) => compressSymbols(value.replace(/[\n]\s*/g, ''));
+
+const getStyleProperties: Array<ASTNode> = (quasis?: Array<ASTNode>, expressions?: Array<ASTNode>) => {
+  const styleProperties = [];
+  for (let i = 0; i < quasis.length; i++) {
+    if (quasis[i].value.cooked) {
+      // We don't need minification in devMode!
+      styleProperties.push({
+        type: 'Literal',
+        value: true ? quasis[i].value.cooked : minify(quasis[i].value.cooked)
+      });
+    }
+  }
+  return [].concat(styleProperties, expressions).filter(Boolean);
+};
 
 /**
  * @todo
@@ -77,11 +96,8 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
 
   // Process dirName and fileName only once per file
   const filePath = opts.module.props.fuseBoxPath.replace(/\.([^.]+)$/, '');
-  const labelMapping = {
-    '[dirname]': filePath.replace(/(\\|\/)/g, '-'),
-    '[filename]': filePath.replace(/(.+)(\\|\/)(.+)$/, '$3'),
-    '[local]': 'inline'
-  };
+  labelMapping['[dirname]'] = filePath.replace(/(\\|\/)/g, '-');
+  labelMapping['[filename]'] = filePath.replace(/(.+)(\\|\/)(.+)$/, '$3');
 
   const renderAutoLabel: ASTNode = () => {
     return {
@@ -100,75 +116,50 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
   // Allows us to look for custom imports
   // import { css as emotionCss } from '@emotion/core'
   const importedEmotionFunctions = [];
-  const checkForFunctions = ['css'];
   let needsInjection = true;
+
+  const isEmotionCall: boolean = (node: ASTNode, index: string) =>
+    // css('styles')
+    importedEmotionFunctions.indexOf(node[index].name) > -1 ||
+    // styled('obj')('styles')
+    importedEmotionFunctions.indexOf((node[index].callee && node[index].callee.name)) > -1 ||
+    // styled.div('div')
+    importedEmotionFunctions.indexOf((node[index].object && node[index].object.name)) > -1;
+
   return {
     onEachNode: (visit: IVisit) => {
       const { node, parent } = visit;
 
       switch (node.type) {
-
-        // css({}); -> CallExpression
         case 'CallExpression':
           // Test if it's an emotioncall
-          if (importedEmotionFunctions.indexOf(node.callee.name) > -1) {
-
-            labelMapping['[local]'] = (parent.type === 'VariableDeclarator')
-              ? parent.id.name
-              : '';
-
-            const label = (
-              !parent.callee || (
-                parent.callee &&
-                parent.callee.name !== node.callee.name
-              )) &&
-              autoLabel &&
-              renderAutoLabel();
-            if (label) {
-              node.arguments.push(label);
+          if (isEmotionCall(node, 'callee')) {
+            if (!parent.callee) {
+              labelMapping['[local]'] = (parent.type === 'VariableDeclarator')
+                ? parent.id.name
+                : '';
+              const label = autoLabel && renderAutoLabel();
+              if (label) {
+                node.arguments.push(label);
+              }
             }
           }
           break;
-
-        // css``; -> TaggedTemplateExpression
         case 'TaggedTemplateExpression':
           // Test if it's an emotioncall
-          if (importedEmotionFunctions.indexOf(node.tag.name) > -1) {
-            const {
+          if (isEmotionCall(node, 'tag')) {
+            let {
               quasi: { expressions, quasis },
               tag: callee
             } = node;
-
-            const values = [];
-            for (let i = 0; i < quasis.length; i++) {
-              if (quasis[i].value.cooked) {
-                // We don't need minification in devMode!
-                if (true) {
-                  values.push({
-                    type: 'Literal',
-                    value: quasis[i].value.cooked
-                  });
-                  continue;
-                }
-
-                const minifiedCss = minify(quasis[i].value.cooked);
-                if (minifiedCss) {
-                  values.push({
-                    type: 'Literal',
-                    value: minifiedCss
-                  });
-                }
-              }
-            }
-
             // Replace this node with new shiny stuff
             return {
               replaceWith: {
-                arguments: [].concat(values, expressions).filter(Boolean),
+                arguments: getStyleProperties(quasis, expressions),
                 callee,
                 type: "CallExpression"
               }
-            }
+            };
           }
           break;
       }
@@ -177,11 +168,13 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
       const node = visit.node;
       const globalContext = visit.globalContext as GlobalContext;
       if (node.type === 'ImportDeclaration') {
-        if (emotionLibraries.indexOf(node.source.value) > -1 && needsInjection) {
+        // if ([].concat.apply(emotionLibraries).indexOf(node.source.value) > -1 && needsInjection) {
+        if ([].concat(emotionLibraries[0], emotionLibraries[1]).indexOf(node.source.value) > -1) {
+          // if (emotionLibraries[0].indexOf(node.source.value) > -1) {
           const specifiersLength = node.specifiers.length;
           let i = 0;
           while (i < specifiersLength) {
-            if (node.specifiers[i].imported.name === 'jsx') {
+            if (node.specifiers[i].imported && node.specifiers[i].imported.name === 'jsx') {
               needsInjection = false;
               // set the globalContext.jsxFactory for the JSXTransformer
               globalContext.jsxFactory = node.specifiers[i].local.name;
@@ -191,7 +184,7 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
             i++;
           }
 
-          if (needsInjection) {
+          if (needsInjection && emotionLibraries[0].indexOf(node.source.value) > -1) {
             needsInjection = false;
             // set the globalContext.jsxFactory for the JSXTransformer
             if (node.source.value === emotionCoreAlias) {
@@ -215,16 +208,11 @@ export function EmotionTransformer(opts?: EmotionTransformerOptions): ITransform
   }
 };
 
-
-
 /**
 // Framework agnostic, do we need support for this?
 import { flush, hydrate, cx, merge, getRegisteredStyles, injectGlobal, keyframes, css, sheet, cache } from 'emotion'
-
 import { css } from '@emotion/core'
-
-
-import { styled } from '@emotion/styled'
+import styled from '@emotion/styled'
 let SomeComp = styled.div({
   color: 'hotpink'
 })
