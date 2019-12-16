@@ -5,7 +5,7 @@ const h1styles = emotionCss`
   color: hotpink;
 `;
 
-export const CustomCss = () => (
+export const CustomCssTests = () => (
   <h1 css={h1styles}>🚀 Jättesnabb 🚀</h1>
 );
 

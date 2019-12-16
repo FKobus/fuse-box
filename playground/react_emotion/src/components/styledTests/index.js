@@ -37,10 +37,9 @@ const Basic = ({ className }) => (
 );
 const Fancy = styled(Basic)`
   color: hotpink;
-  margin-top: 200px;
 `;
 
-export const Styled = () => (
+export const StyledTests = () => (
   <div>
     <h1>🚀 Jättesnabb 🚀</h1>
     <Button>Super simple button</Button>
@@ -50,9 +49,11 @@ export const Styled = () => (
       <ButtonWithProps primary>This is a primary button.</ButtonWithProps>
     </Container>
     <h2>🚀 Jättesnabb 🚀</h2>
-    <RegularDivTTE>RegularDivTTE</RegularDivTTE>
-    <RegularDivOE>RegularDivOE</RegularDivOE>
-    <RegularDiv>RegularDiv</RegularDiv>
+    <Container>
+      <RegularDivTTE>RegularDivTTE</RegularDivTTE>
+      <RegularDivOE>RegularDivOE</RegularDivOE>
+      <RegularDiv>RegularDiv</RegularDiv>
+    </Container>
     <Fancy />
   </div>
 );
