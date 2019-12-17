@@ -63,5 +63,5 @@ task("dist", async ctx => {
   ctx.isProduction = true;
 
   const client = ctx.getClient();
-  await client.runProd({ uglify: true, manifest: true });
+  await client.runProd();
 });
