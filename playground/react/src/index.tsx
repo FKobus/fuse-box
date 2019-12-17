@@ -1,19 +1,14 @@
-import { Component } from 'react';
 import * as React from 'react';
+import { Component } from 'react';
 import * as ReactDOM from 'react-dom';
-import { Other } from './Other';
 import './index.scss';
+import { Other } from './Other';
 
 class App extends Component {
   render() {
-    const snapshot = { isDraggingOver: false };
-    function getSourceStyle(opts) {
-      return {};
-    }
-
     return (
       <div>
-        22222
+        22222222
         <Other></Other>
       </div>
     );
