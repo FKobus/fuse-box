@@ -3,6 +3,7 @@ export { pluginAngular } from './plugins/core/plugin_angular';
 export { pluginConsolidate } from './plugins/core/plugin_consolidate';
 export { pluginCSS } from './plugins/core/plugin_css';
 export { pluginCustomTransform } from './plugins/core/plugin_customtransform';
+export { pluginEmotion } from './plugins/core/plugin_emotion';
 export { pluginJSON } from './plugins/core/plugin_json';
 export { pluginLess } from './plugins/core/plugin_less';
 export { pluginLink } from './plugins/core/plugin_link';
